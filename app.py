@@ -3,6 +3,8 @@ import os
 import uuid
 from pathlib import Path
 from datetime import datetime, timezone
+from src.rules_engine import resolve_inheritance
+
 
 import pandas as pd
 import streamlit as st
@@ -360,6 +362,8 @@ def screen_extract():
                     )
 
                     items = result.get("line_items", [])
+                    
+                    items = resolve_inheritance(items)
 
                     if not items:
 
@@ -394,6 +398,7 @@ def screen_extract():
                             "review_reasons": [],
 
                             "flags": item.get("flags") or [],
+                            "field_issues": item.get("field_issues") or {},
 
                             "confidence": (
                                 item.get("confidence", {})
@@ -401,6 +406,11 @@ def screen_extract():
 
                             "raw_values": (
                                 item.get("raw_values") or {}
+                            ),
+                            "group_id": item.get("group_id"),
+                            "field_markers": item.get("field_markers") or {},
+                            "inheritance_provenance": (
+                             item.get("inheritance_provenance") or {}
                             ),
 
                             "extraction_notes": (
@@ -420,9 +430,11 @@ def screen_extract():
 
                         record["review_reasons"] = reasons
 
-                        if reasons or record["flags"]:
+                        if reasons:
 
                             record["status"] = "REVIEW_REQUIRED"
+                        else:
+                            record["status"] = "EXTRACTED"
 
                         st.session_state.records.append(record)
 
